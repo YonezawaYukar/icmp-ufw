@@ -1,0 +1,15 @@
+listen_interface:
+  - lo0
+firewall_program: ufw
+time_out: 3600
+webhook_url: ""
+webhook_method: ""
+webhook_data: ""
+webhook_headers:
+  - ""
+hot_update: ""
+auto_reload: false
+icmp_ufw_rules:
+  - size: 56
+    time_out: 3600
+    allow_port: 1-65535
