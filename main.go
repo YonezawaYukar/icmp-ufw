@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 )
 
@@ -32,16 +31,7 @@ func main() {
 		flag.Usage()
 		return
 	}
-	cache := []byte{}
-	cache, err := os.ReadFile("cache.txt")
-	if err == nil {
-		module.Clear(string(cache))
-	}
-	f, _ := os.Create("cache.txt")
-	f.Truncate(0)
-	defer f.Close()
-	args.SyncWrite = &config.SyncWriter{sync.Mutex{}, f}
-	icmpufw, err = config.GetConfig(args)
+	icmpufw, err := config.GetConfig(args)
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -57,7 +47,6 @@ func main() {
 		for s := range c {
 			switch s {
 			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM:
-
 				icmpufw.SetStop()
 			}
 		}

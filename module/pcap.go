@@ -1,7 +1,6 @@
 package module
 
 import (
-	"fmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/pcap"
 	"icmp-ufw/config"
@@ -9,13 +8,22 @@ import (
 	"sync"
 )
 
+// Pcap
+// @Description: Pcap接口
+// firewall: 防火墙实例
 type Pcap struct {
 	icmpufw  *config.IcmpUfw
 	handle   []*pcap.Handle
 	devices  []pcap.Interface
-	firewall []*Firewall
+	firewall *Firewall
 }
 
+// GetPcap
+//
+//	@Description: 获取Pcap实例
+//	@param icmpufw 防火墙规则
+//	@return p Pcap实例
+//	@return err 错误
 func GetPcap(icmpufw *config.IcmpUfw) (p *Pcap, err error) {
 	p = &Pcap{icmpufw: icmpufw}
 	p.devices, err = pcap.FindAllDevs()
@@ -27,7 +35,6 @@ func GetPcap(icmpufw *config.IcmpUfw) (p *Pcap, err error) {
 			if listen == device.Name || listen == "0.0.0.0" {
 				handle, err := pcap.OpenLive(device.Name, int32(65535), false, pcap.BlockForever)
 				if err != nil {
-					log.Fatal(err)
 					continue
 				}
 				log.Printf("Listen %s", device.Name)
@@ -39,13 +46,20 @@ func GetPcap(icmpufw *config.IcmpUfw) (p *Pcap, err error) {
 	return
 }
 
+// StartPcap
+//
+//	@Description: 开始监听
+//	@receiver p Pcap实例
 func (p *Pcap) StartPcap() {
 	wg := sync.WaitGroup{}
+	p.firewall = GetFirewall(p.icmpufw.GetFirewallRuleName(), p.icmpufw.GetOpenPorts(), p.icmpufw.GetFireWallProgram())
 	for _, handle := range p.handle {
+		// 为每一个接口单独开启协程
 		wg.Add(1)
 		go func(handle *pcap.Handle, icmpufw *config.IcmpUfw) {
 			defer wg.Done()
 			defer handle.Close()
+			// 开启icmp包的监听
 			handle.SetBPFFilter("icmp")
 			source := gopacket.NewPacketSource(handle, handle.LinkType())
 			for {
@@ -55,17 +69,12 @@ func (p *Pcap) StartPcap() {
 					if networkLayer == nil {
 						break
 					}
-					size := len(packet.Data()) - 32
-					rule := icmpufw.GetRule(size)
-					ipaddress := networkLayer.NetworkFlow().Src().String()
+					size := len(packet.Data()) - 32                        // 32为icmp头部长度
+					rule := icmpufw.GetRule(size)                          // 根据size获取规则
+					ipaddress := networkLayer.NetworkFlow().Src().String() // 获取源ip
+					// 如果匹配到规则
 					if rule != nil {
-						ruleGroupName := fmt.Sprintf("icmp-ufw-%s-%s", ipaddress, RandStr(6))
-						p.firewall = append(p.firewall, AllowAccept(ipaddress, rule.GetAllowPort(), icmpufw.GetFireWallProgram(), ruleGroupName))
-						cache := fmt.Sprintf("%s %s %s", ipaddress, rule.GetAllowPort(), icmpufw.GetFireWallProgram())
-						if icmpufw.GetFireWallProgram() == "iptables" {
-							cache += " " + ruleGroupName
-						}
-						icmpufw.GetArgs().SyncWrite.Writer.Write([]byte(cache + "\n"))
+						p.firewall.Allow(ipaddress, rule.GetAllowPorts(), rule.GetTimeOut())
 					}
 				case <-icmpufw.GetStop():
 					return
@@ -76,9 +85,11 @@ func (p *Pcap) StartPcap() {
 	defer wg.Wait()
 }
 
+// StopPcap
+//
+//	@Description: 停止监听
+//	@receiver p Pcap实例
 func (p *Pcap) StopPcap() {
-	for _, firewall := range p.firewall {
-		firewall.Stop()
-	}
+	p.firewall.Stop(true)
 	log.Printf("Stop!")
 }

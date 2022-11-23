@@ -6,20 +6,8 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 )
-
-type SyncWriter struct {
-	M      sync.Mutex
-	Writer io.Writer
-}
-
-func (w *SyncWriter) Write(b []byte) (n int, err error) {
-	w.M.Lock()
-	defer w.M.Unlock()
-	return w.Writer.Write(b)
-}
 
 type Args_struct struct {
 	ConfigFile string
@@ -27,14 +15,16 @@ type Args_struct struct {
 	AutoReload bool
 	Help       bool
 	TimeOut    int
-	SyncWrite  *SyncWriter
 }
 
+// IcmpUfw
+// @Description: icmp_ufw
 type IcmpUfw struct {
 	// The name of the interface to listen on
 	ListenInterface      []string         `yaml:"listen_interface"`
 	FireWallProgram      string           `yaml:"firewall_program"`
-	Icmp_ufw_rules       []*icmp_ufw_rule `yaml:"icmp_ufw_rules"`
+	Icmp_ufw_rules       []*icmp_ufw_rule `yaml:"rules"`
+	Firewall_rule_name   string           `yaml:"firewall_rule_name"`
 	TimeOut              int              `yaml:"time_out"`
 	Webhook_url          string           `yaml:"webhook_url"`
 	Webhook_method       string           `yaml:"webhook_method"`
@@ -42,17 +32,24 @@ type IcmpUfw struct {
 	Webhook_headers      []string         `yaml:"webhook_headers"`
 	HotUpdate            string           `yaml:"hot_update"`
 	AutoReload           bool             `yaml:"auto_reload"`
+	Open_ports           string           `yaml:"open_ports"`
 	args                 *Args_struct
 	stop                 chan bool
 	icmp_ufw_rule_caches map[int]*icmp_ufw_rule
 }
 
 type icmp_ufw_rule struct {
-	Size      int    `yaml:"size"`
-	TimeOut   int    `yaml:"time_out"`
-	AllowPort string `yaml:"allow_port"`
+	Size       int    `yaml:"size"`
+	TimeOut    int    `yaml:"time_out"`
+	AllowPorts string `yaml:"allow_ports"`
 }
 
+// GetHotUpdate
+//
+//	@Description: GetHotUpdate
+//	@param hotUpdate_url string 热更新地址
+//	@return body []byte 热更新内容
+//	@return err error 错误
 func GetHotUpdate(hotUpdate_url string) (body []byte, err error) {
 	resp, err := http.Get(hotUpdate_url)
 	if err != nil {
@@ -66,6 +63,12 @@ func GetHotUpdate(hotUpdate_url string) (body []byte, err error) {
 	return
 }
 
+// GetConfig
+//
+//	@Description: GetConfig
+//	@param args *Args_struct 命令行参数
+//	@return _icmp_ufw *IcmpUfw 配置
+//	@return err error 错误
 func GetConfig(args *Args_struct) (_icmp_ufw *IcmpUfw, err error) {
 	yamlConetent, err := os.ReadFile(args.ConfigFile)
 	if err != nil {
@@ -73,6 +76,7 @@ func GetConfig(args *Args_struct) (_icmp_ufw *IcmpUfw, err error) {
 	}
 	_icmp_ufw = &IcmpUfw{args: args, icmp_ufw_rule_caches: make(map[int]*icmp_ufw_rule), stop: make(chan bool, 100)}
 	if _icmp_ufw.GetHotUpdate() != "" {
+		// 热更新协程
 		go func(_icmp_ufw *IcmpUfw) {
 			for {
 				yamlConetent, _ := GetHotUpdate(_icmp_ufw.GetHotUpdate())
@@ -87,6 +91,7 @@ func GetConfig(args *Args_struct) (_icmp_ufw *IcmpUfw, err error) {
 		return
 	}
 	err = yaml.Unmarshal(yamlConetent, &_icmp_ufw)
+	// 自动重载协程
 	if _icmp_ufw.GetAutoReload() {
 		go func(_icmp_ufw *IcmpUfw) {
 			for {
@@ -166,8 +171,16 @@ func (c *icmp_ufw_rule) GetSize() int {
 func (c *icmp_ufw_rule) GetTimeOut() int {
 	return c.TimeOut
 }
-func (c *icmp_ufw_rule) GetAllowPort() string {
-	return c.AllowPort
+func (c *icmp_ufw_rule) GetAllowPorts() string {
+	return c.AllowPorts
+}
+
+func (icmp_ufw *IcmpUfw) GetFirewallRuleName() string {
+	return icmp_ufw.Firewall_rule_name
+}
+
+func (icmp_ufw *IcmpUfw) GetOpenPorts() string {
+	return icmp_ufw.Open_ports
 }
 
 func (c *IcmpUfw) GetRule(size int) *icmp_ufw_rule {
