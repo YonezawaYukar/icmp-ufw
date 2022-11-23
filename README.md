@@ -5,15 +5,16 @@
 - 热加载
 - 远程热更新
 - 通过icmp包的size控制防火墙策略
-- 支持ufw
+- 支持iptables支持
+- 策略时间限制
 - 缓存功能，防止异常退出后策略遗留
 
 # 暂未实现（即将）
 - webhook调用
-- iptables支持
-- 策略时间限制
 - 更加完善的日志系统
 - 快速部署
+- 全局时间限制
+- 控制nat转发规则
 
 # 使用方法
 ## 1. 安装
@@ -28,22 +29,24 @@ go build main.go
 
 ## 2. 配置
 ```yaml
-# 配置文件
-listen_interface:  #监听接口
+listen_interface: #监听的接口
   - lo0
-firewall_program: ufw  #调用防火墙程序 ufw/iptables
-time_out: 3600  #过期时间
-webhook_url: ""  #webhook地址
-webhook_method: ""  #webhook调用方式 get/post/...
-webhook_data: ""  #webhook数据 占位符：{srcip} {allow_port}
-webhook_headers:  #webhook请求头
+firewall_program: iptables
+firewall_rule_name: yonezawa
+time_out: 3600 #全局超时时间
+webhook_url: ""
+webhook_method: ""
+webhook_data: ""
+webhook_headers:
   - ""
-hot_update: ""  #热更新地址，返回为本配置文件
-auto_reload: false  #自动重载当前配置文件
-icmp_ufw_rules:  #防火墙策略
-  - size: 56  #icmp包大小
-    time_out: 3600  #过期时间
-    allow_port: 1-65535  #允许端口
+hot_update: "" #热更新
+auto_reload: false #自动重载配置文件
+auto_reload_delay: 60 #自动重载延迟
+open_ports: "80,22,7000" #默认开放端口
+rules:
+  - size: 56 #规则匹配的数据包大小
+    time_out: 3600 #单条规则超时时间
+    allow_ports: 1-65535 #允许的端口
 ```
 
 ## 3. 运行
@@ -60,3 +63,11 @@ icmp_ufw_rules:  #防火墙策略
 - 而梯子又由于一些原因 可能隔一段时间ip就变了，或者切换节点，这时候就无法访问服务器，就很...不舒服
 - 所以用了几个小时写了这个demo（目前） 之后会逐步完善
 - 就酱～
+
+## 5.开发日志
+### 2022-11-23
+- 修复了一个bug
+- 优化了一下代码
+- 优化了一下配置文件
+- 优化了一下日志
+- 将ufw改为iptables 以适配更多系统 并且实现更多功能
