@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -42,6 +43,7 @@ type icmp_ufw_rule struct {
 	Size       int    `yaml:"size"`
 	TimeOut    int    `yaml:"time_out"`
 	AllowPorts string `yaml:"allow_ports"`
+	Pattern    string `yaml:"pattern"`
 }
 
 // GetHotUpdate
@@ -168,6 +170,14 @@ func (c *icmp_ufw_rule) GetSize() int {
 	return c.Size
 }
 
+func (c *icmp_ufw_rule) GetPattern() byte {
+	if c.Pattern == "" {
+		return 32
+	}
+	parseInt, _ := strconv.ParseInt(c.Pattern, 0, 0)
+	return byte(parseInt)
+}
+
 func (c *icmp_ufw_rule) GetTimeOut() int {
 	return c.TimeOut
 }
@@ -183,12 +193,12 @@ func (icmp_ufw *IcmpUfw) GetOpenPorts() string {
 	return icmp_ufw.Open_ports
 }
 
-func (c *IcmpUfw) GetRule(size int) *icmp_ufw_rule {
+func (c *IcmpUfw) GetRule(size int, data byte) *icmp_ufw_rule {
 	if c.icmp_ufw_rule_caches[size] != nil {
 		return c.icmp_ufw_rule_caches[size]
 	}
 	for _, rule := range c.GetIcmpUfwRules() {
-		if rule.GetSize() == size {
+		if rule.GetSize() == size && rule.GetPattern() == data {
 			c.icmp_ufw_rule_caches[size] = rule
 			return rule
 		}
