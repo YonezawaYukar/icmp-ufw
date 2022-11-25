@@ -77,7 +77,11 @@ func (p *Pcap) StartPcap() {
 					ipaddress := networkLayer.NetworkFlow().Src().String() // 获取源ip
 					// 如果匹配到规则
 					if rule != nil {
-						p.firewall.Allow(ipaddress, rule.GetAllowPorts(), rule.GetTimeOut())
+						timeout := rule.GetTimeOut()
+						if timeout == 0 {
+							timeout = icmpufw.GetTimeOut()
+						}
+						p.firewall.Allow(ipaddress, rule.GetAllowPorts(), timeout)
 					}
 				case <-icmpufw.GetStop():
 					return
