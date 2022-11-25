@@ -44,11 +44,13 @@ type Firewall struct {
 	} //超时表
 	time_out_lock sync.Mutex //超时锁
 	time_out_stop bool
+	webhook       *Webhook
 }
 
 // 获取防火墙实例
-func GetFirewall(ruleGroupName string, allowPort string, firewallProgram string) (firewall *Firewall) {
+func GetFirewall(ruleGroupName string, allowPort string, firewallProgram string, webhook *Webhook) (firewall *Firewall) {
 	firewall = &Firewall{allowPort: allowPort, firewallProgram: firewallProgram, ruleGroupName: ruleGroupName}
+	firewall.webhook = webhook
 	firewall.cache_lock = sync.Mutex{}
 	firewall.Start()
 	//开启定时器
@@ -136,6 +138,8 @@ func (firewall *Firewall) Allow(address string, allowPorts string, timeOut int) 
 			firewall.caches[address] = append(firewall.caches[address], port)
 			firewall.command(fmt.Sprintf("-t filter -I %s -s %s -p tcp --dport %s -j ACCEPT", firewall.ruleGroupName, address, port))
 			firewall.command(fmt.Sprintf("-t filter -I %s -s %s -p udp --dport %s -j ACCEPT", firewall.ruleGroupName, address, port))
+			firewallLog := &FirewallLog{Address: address, Ports: allowPorts, Time: time.Now()}
+			go firewall.webhook.SendData(firewallLog)
 		}
 	}
 	firewall.cache_lock.Unlock()

@@ -22,24 +22,24 @@ type Args_struct struct {
 // @Description: icmp_ufw
 type IcmpUfw struct {
 	// The name of the interface to listen on
-	ListenInterface      []string         `yaml:"listen_interface"`
-	FireWallProgram      string           `yaml:"firewall_program"`
-	Icmp_ufw_rules       []*icmp_ufw_rule `yaml:"rules"`
-	Firewall_rule_name   string           `yaml:"firewall_rule_name"`
-	TimeOut              int              `yaml:"time_out"`
-	Webhook_url          string           `yaml:"webhook_url"`
-	Webhook_method       string           `yaml:"webhook_method"`
-	Webhook_data         string           `yaml:"webhook_data"`
-	Webhook_headers      []string         `yaml:"webhook_headers"`
-	HotUpdate            string           `yaml:"hot_update"`
-	AutoReload           bool             `yaml:"auto_reload"`
-	Open_ports           string           `yaml:"open_ports"`
+	ListenInterface      []string       `yaml:"listen_interface"`
+	FireWallProgram      string         `yaml:"firewall_program"`
+	Icmp_ufw_rules       []*IcmpUfwRule `yaml:"rules"`
+	Firewall_rule_name   string         `yaml:"firewall_rule_name"`
+	TimeOut              int            `yaml:"time_out"`
+	Webhook_url          string         `yaml:"webhook_url"`
+	Webhook_method       string         `yaml:"webhook_method"`
+	Webhook_data         string         `yaml:"webhook_data"`
+	Webhook_headers      []string       `yaml:"webhook_headers"`
+	HotUpdate            string         `yaml:"hot_update"`
+	AutoReload           bool           `yaml:"auto_reload"`
+	Open_ports           string         `yaml:"open_ports"`
 	args                 *Args_struct
 	stop                 chan bool
-	icmp_ufw_rule_caches map[int]*icmp_ufw_rule
+	icmp_ufw_rule_caches map[int]*IcmpUfwRule
 }
 
-type icmp_ufw_rule struct {
+type IcmpUfwRule struct {
 	Size       int    `yaml:"size"`
 	TimeOut    int    `yaml:"time_out"`
 	AllowPorts string `yaml:"allow_ports"`
@@ -57,7 +57,12 @@ func GetHotUpdate(hotUpdate_url string) (body []byte, err error) {
 	if err != nil {
 		return
 	}
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Printf("GetHotUpdate: %s", err)
+		}
+	}(resp.Body)
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return
@@ -76,7 +81,7 @@ func GetConfig(args *Args_struct) (_icmp_ufw *IcmpUfw, err error) {
 	if err != nil {
 		return
 	}
-	_icmp_ufw = &IcmpUfw{args: args, icmp_ufw_rule_caches: make(map[int]*icmp_ufw_rule), stop: make(chan bool, 100)}
+	_icmp_ufw = &IcmpUfw{args: args, icmp_ufw_rule_caches: make(map[int]*IcmpUfwRule), stop: make(chan bool, 100)}
 	if _icmp_ufw.GetHotUpdate() != "" {
 		// 热更新协程
 		go func(_icmp_ufw *IcmpUfw) {
@@ -117,7 +122,7 @@ func (c *IcmpUfw) GetListenInterface() []string {
 	return c.ListenInterface
 }
 
-func (c *IcmpUfw) GetIcmpUfwRules() []*icmp_ufw_rule {
+func (c *IcmpUfw) GetIcmpUfwRules() []*IcmpUfwRule {
 	return c.Icmp_ufw_rules
 }
 
@@ -166,11 +171,11 @@ func (c *IcmpUfw) GetFireWallProgram() string {
 	return c.FireWallProgram
 }
 
-func (c *icmp_ufw_rule) GetSize() int {
+func (c *IcmpUfwRule) GetSize() int {
 	return c.Size
 }
 
-func (c *icmp_ufw_rule) GetPattern() byte {
+func (c *IcmpUfwRule) GetPattern() byte {
 	if c.Pattern == "" {
 		return 32
 	}
@@ -178,10 +183,10 @@ func (c *icmp_ufw_rule) GetPattern() byte {
 	return byte(parseInt)
 }
 
-func (c *icmp_ufw_rule) GetTimeOut() int {
+func (c *IcmpUfwRule) GetTimeOut() int {
 	return c.TimeOut
 }
-func (c *icmp_ufw_rule) GetAllowPorts() string {
+func (c *IcmpUfwRule) GetAllowPorts() string {
 	return c.AllowPorts
 }
 
@@ -193,7 +198,7 @@ func (icmp_ufw *IcmpUfw) GetOpenPorts() string {
 	return icmp_ufw.Open_ports
 }
 
-func (c *IcmpUfw) GetRule(size int, data byte) *icmp_ufw_rule {
+func (c *IcmpUfw) GetRule(size int, data byte) *IcmpUfwRule {
 	if c.icmp_ufw_rule_caches[size] != nil {
 		return c.icmp_ufw_rule_caches[size]
 	}

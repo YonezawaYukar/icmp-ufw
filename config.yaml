@@ -3,11 +3,11 @@ listen_interface: #监听的接口
 firewall_program: iptables
 firewall_rule_name: yonezawa
 time_out: 3600 #全局超时时间
-webhook_url: ""
-webhook_method: ""
-webhook_data: ""
+webhook_url: "http://127.0.0.1:2333/?log=[{time}]允许{address}访问{ports}端口"
+webhook_method: "GET"
+webhook_data: "[{time}]允许{address}访问{ports}端口"
 webhook_headers:
-  - ""
+  - "nya: nya"
 hot_update: "" #热更新
 auto_reload: false #自动重载配置文件
 auto_reload_delay: 60 #自动重载延迟

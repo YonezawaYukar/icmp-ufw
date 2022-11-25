@@ -39,7 +39,6 @@ func GetPcap(icmpufw *config.IcmpUfw) (p *Pcap, err error) {
 				}
 				log.Printf("Listen %s", device.Name)
 				p.handle = append(p.handle, handle)
-				handle.SetBPFFilter("icmp")
 			}
 		}
 	}
@@ -52,7 +51,7 @@ func GetPcap(icmpufw *config.IcmpUfw) (p *Pcap, err error) {
 //	@receiver p Pcap实例
 func (p *Pcap) StartPcap() {
 	wg := sync.WaitGroup{}
-	p.firewall = GetFirewall(p.icmpufw.GetFirewallRuleName(), p.icmpufw.GetOpenPorts(), p.icmpufw.GetFireWallProgram())
+	p.firewall = GetFirewall(p.icmpufw.GetFirewallRuleName(), p.icmpufw.GetOpenPorts(), p.icmpufw.GetFireWallProgram(), NewWebhook(p.icmpufw))
 	for _, handle := range p.handle {
 		// 为每一个接口单独开启协程
 		wg.Add(1)
@@ -60,7 +59,10 @@ func (p *Pcap) StartPcap() {
 			defer wg.Done()
 			defer handle.Close()
 			// 开启icmp包的监听
-			handle.SetBPFFilter("icmp")
+			err := handle.SetBPFFilter("icmp")
+			if err != nil {
+				log.Printf("SetBPFFilter error: %s", err)
+			}
 			source := gopacket.NewPacketSource(handle, handle.LinkType())
 			for {
 				select {
