@@ -33,6 +33,7 @@ type IcmpUfw struct {
 	Webhook_headers      []string       `yaml:"webhook_headers"`
 	HotUpdate            string         `yaml:"hot_update"`
 	AutoReload           bool           `yaml:"auto_reload"`
+	AutoRelaodDelay      int            `yaml:"auto_reload_delay"`
 	Open_ports           string         `yaml:"open_ports"`
 	args                 *Args_struct
 	stop                 chan bool
@@ -108,7 +109,7 @@ func GetConfig(args *Args_struct) (_icmp_ufw *IcmpUfw, err error) {
 					log.Fatal(err)
 				}
 				log.Printf("AutoReload: %s", _icmp_ufw.args.ConfigFile)
-				time.Sleep(time.Second * time.Duration(10))
+				time.Sleep(time.Second * time.Duration(_icmp_ufw.GetAutoReloadDelay()))
 			}
 		}(_icmp_ufw)
 	}
@@ -161,6 +162,13 @@ func (c *IcmpUfw) GetAutoReload() bool {
 		return true
 	}
 	return c.AutoReload
+}
+
+func (c *IcmpUfw) GetAutoReloadDelay() int {
+	if c.AutoRelaodDelay != 0 {
+		return c.AutoRelaodDelay
+	}
+	return 10
 }
 
 func (c *IcmpUfw) GetArgs() *Args_struct {
