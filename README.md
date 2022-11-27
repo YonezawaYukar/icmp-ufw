@@ -23,6 +23,7 @@
 # 使用方法
 ## 1. 安装
 ```shell
+sudo apt-get install libpcap-dev  / sudo yum install libpcap-devel
 make build
 make install
 make up
