@@ -10,10 +10,10 @@ clean: ## Clean the project
 	rm -rf bin/main
 
 install: ## Install the project
-	mkdir /usr/local/share/icmpfw
-	cp -r ./bin/main /usr/local/share/icmpfw/icmpfw
-	cp ./bin/config.yaml /usr/local/share/icmpfw/config.yaml
-	cp ./service/icmpfw.service /etc/systemd/system/icmpfw.service
+	mkdir -p /usr/local/share/icmpfw
+	cp ./bin/main /usr/local/share/icmpfw/icmpfw
+	cp -n ./bin/config.yaml /usr/local/share/icmpfw/config.yaml
+	cp -n ./service/icmpfw.service /etc/systemd/system/icmpfw.service
 up:
 	systemctl daemon-reload
 	systemctl enable icmpfw.service
