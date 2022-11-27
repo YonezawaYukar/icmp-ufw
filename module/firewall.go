@@ -138,8 +138,10 @@ func (firewall *Firewall) Allow(address string, allowPorts string, timeOut int) 
 			firewall.caches[address] = append(firewall.caches[address], port)
 			firewall.command(fmt.Sprintf("-t filter -I %s -s %s -p tcp --dport %s -j ACCEPT", firewall.ruleGroupName, address, port))
 			firewall.command(fmt.Sprintf("-t filter -I %s -s %s -p udp --dport %s -j ACCEPT", firewall.ruleGroupName, address, port))
-			firewallLog := &FirewallLog{Address: address, Ports: allowPorts, Time: time.Now()}
-			go firewall.webhook.SendData(firewallLog)
+			if firewall.webhook != nil {
+				firewallLog := &FirewallLog{Address: address, Ports: allowPorts, Time: time.Now()}
+				go firewall.webhook.SendData(firewallLog)
+			}
 		}
 	}
 	firewall.cache_lock.Unlock()

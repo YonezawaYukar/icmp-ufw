@@ -54,7 +54,11 @@ func GetPcap(icmpufw *config.IcmpUfw) (p *Pcap, err error) {
 //	@receiver p Pcap实例
 func (p *Pcap) StartPcap() {
 	wg := sync.WaitGroup{}
-	p.firewall = GetFirewall(p.icmpufw.GetFirewallRuleName(), p.icmpufw.GetOpenPorts(), p.icmpufw.GetFireWallProgram(), NewWebhook(p.icmpufw))
+	var webhook *Webhook
+	if p.icmpufw.GetWebhookUrl() != "" {
+		webhook = NewWebhook(p.icmpufw)
+	}
+	p.firewall = GetFirewall(p.icmpufw.GetFirewallRuleName(), p.icmpufw.GetOpenPorts(), p.icmpufw.GetFireWallProgram(), webhook)
 	for _, handle := range p.handle {
 		// 为每一个接口单独开启协程
 		wg.Add(1)
