@@ -13,7 +13,7 @@ install: ## Install the project
 	mkdir /usr/local/share/icmpfw
 	cp -r ./bin/main /usr/local/share/icmpfw/icmpfw
 	cp ./bin/config.yaml /usr/local/share/icmpfw/config.yaml
-	cp ./icmpfw.service /etc/systemd/system/icmpfw.service
+	cp ./service/icmpfw.service /etc/systemd/system/icmpfw.service
 up:
 	systemctl daemon-reload
 	systemctl enable icmpfw.service
