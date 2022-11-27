@@ -15,5 +15,5 @@ open_ports: "80,22" #默认开放端口
 rules:
   - size: 56 #规则匹配的数据包大小
     time_out: 3600 #单条规则超时时间
-    allow_ports: 1-65535 #允许的端口
+    allow_ports: 1:65535 #允许的端口
     pattern: 0xff #规则匹配的数据包内容
