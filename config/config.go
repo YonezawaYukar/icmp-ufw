@@ -82,7 +82,7 @@ func GetConfig(args *Args_struct) (_icmp_ufw *IcmpUfw, err error) {
 	if err != nil {
 		return
 	}
-	_icmp_ufw = &IcmpUfw{args: args, icmp_ufw_rule_caches: make(map[int]*IcmpUfwRule), stop: make(chan bool, 100)}
+	_icmp_ufw = &IcmpUfw{args: args, icmp_ufw_rule_caches: make(map[int]*IcmpUfwRule), stop: make(chan bool)}
 	if _icmp_ufw.GetHotUpdate() != "" {
 		// 热更新协程
 		go func(_icmp_ufw *IcmpUfw) {
@@ -224,5 +224,5 @@ func (c *IcmpUfw) GetStop() chan bool {
 }
 
 func (c *IcmpUfw) SetStop() {
-	c.stop <- true
+	close(c.stop)
 }

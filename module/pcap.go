@@ -6,6 +6,7 @@ import (
 	"icmp-ufw/config"
 	"log"
 	"sync"
+	"time"
 )
 
 // Pcap
@@ -28,13 +29,15 @@ func GetPcap(icmpufw *config.IcmpUfw) (p *Pcap, err error) {
 	p = &Pcap{icmpufw: icmpufw}
 	p.devices, err = pcap.FindAllDevs()
 	if err != nil {
+		log.Printf("FindAllDevs error: %s", err)
 		return
 	}
 	for _, listen := range icmpufw.GetListenInterface() {
 		for _, device := range p.devices {
 			if listen == device.Name || listen == "0.0.0.0" {
-				handle, err := pcap.OpenLive(device.Name, int32(65535), false, pcap.BlockForever)
+				handle, err := pcap.OpenLive(device.Name, int32(65535), false, time.Second)
 				if err != nil {
+					log.Printf("OpenLive error: %s", err)
 					continue
 				}
 				log.Printf("Listen %s", device.Name)
@@ -55,9 +58,12 @@ func (p *Pcap) StartPcap() {
 	for _, handle := range p.handle {
 		// 为每一个接口单独开启协程
 		wg.Add(1)
-		go func(handle *pcap.Handle, icmpufw *config.IcmpUfw) {
-			defer wg.Done()
-			defer handle.Close()
+		go func(handle *pcap.Handle) {
+			defer func() {
+				wg.Done()
+				handle.Close()
+				log.Printf("handle close")
+			}()
 			// 开启icmp包的监听
 			err := handle.SetBPFFilter("icmp")
 			if err != nil {
@@ -73,23 +79,23 @@ func (p *Pcap) StartPcap() {
 					}
 					size := len(packet.Data()) - 32                        // 32为icmp头部长度
 					data := packet.Data()[size+8 : 32+size-8][0]           // 获取icmp填充数据
-					rule := icmpufw.GetRule(size, data)                    // 根据size获取规则
+					rule := p.icmpufw.GetRule(size, data)                  // 根据size获取规则
 					ipaddress := networkLayer.NetworkFlow().Src().String() // 获取源ip
 					// 如果匹配到规则
 					if rule != nil {
 						timeout := rule.GetTimeOut()
 						if timeout == 0 {
-							timeout = icmpufw.GetTimeOut()
+							timeout = p.icmpufw.GetTimeOut()
 						}
 						p.firewall.Allow(ipaddress, rule.GetAllowPorts(), timeout)
 					}
-				case <-icmpufw.GetStop():
+				case <-p.icmpufw.GetStop():
 					return
 				}
 			}
-		}(handle, p.icmpufw)
+		}(handle)
 	}
-	defer wg.Wait()
+	wg.Wait()
 }
 
 // StopPcap
