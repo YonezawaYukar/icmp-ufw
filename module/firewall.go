@@ -106,7 +106,7 @@ func (firewall *Firewall) Start() {
 	firewall.caches = make(map[string][]string)
 	firewall.command("-t filter -N " + firewall.ruleGroupName)
 	firewall.command("-t filter -F " + firewall.ruleGroupName)
-	firewall.command("-t filter -I INPUT -p tcp --dport 1:65535 -j REJECT -I " + firewall.ruleGroupName)
+	firewall.command("-t filter -p tcp --dport 1:65535 -j REJECT -I " + firewall.ruleGroupName)
 	firewall.command("-t filter -p udp --dport 1:65535 -j REJECT -I " + firewall.ruleGroupName)
 	firewall.command("-t filter -p icmp -j ACCEPT -I " + firewall.ruleGroupName)
 	firewall.command(" -i lo -j ACCEPT -I " + firewall.ruleGroupName)
