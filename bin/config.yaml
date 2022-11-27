@@ -1,0 +1,11 @@
+listen_interface:
+  - lo0
+firewall_program: iptables
+firewall_rule_name: icmpfw
+time_out: 3600
+open_ports: "80,22" #默认开放端口
+rules:
+  - size: 56 #规则匹配的数据包大小
+    time_out: 3600 #单条规则超时时间
+    allow_ports: 0 #允许的端口
+    pattern: 0xff #规则匹配的数据包内容

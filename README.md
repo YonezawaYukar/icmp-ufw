@@ -23,11 +23,10 @@
 # 使用方法
 ## 1. 安装
 ```shell
-go mod download
-
-go build main.go
-
-./main -h
+make build
+make install
+make up
+/usr/local/share/icmp-ufw/icmp-ufw -h
 ```
 ![image](img.png)
 
