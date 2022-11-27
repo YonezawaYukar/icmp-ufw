@@ -104,8 +104,8 @@ func (firewall *Firewall) command(command string) {
 func (firewall *Firewall) Start() {
 	//sudo iptables -t filter -N IN_WEB
 	firewall.caches = make(map[string][]string)
+	firewall.command("-X " + firewall.ruleGroupName)
 	firewall.command("-t filter -N " + firewall.ruleGroupName)
-	firewall.command("-t filter -F " + firewall.ruleGroupName)
 	firewall.command("-t filter -p tcp --dport 1:65535 -j REJECT -I " + firewall.ruleGroupName)
 	firewall.command("-t filter -p udp --dport 1:65535 -j REJECT -I " + firewall.ruleGroupName)
 	firewall.command("-t filter -p icmp -j ACCEPT -I " + firewall.ruleGroupName)
