@@ -77,7 +77,7 @@ func (p *Pcap) StartPcap() {
 					if networkLayer == nil {
 						break
 					}
-					size := len(packet.Data()) - 32                        // 32为icmp头部长度
+					size := len(packet.Layer(gopacket.LayerTypePayload).LayerContents())
 					data := packet.Data()[size+8 : 32+size-8][0]           // 获取icmp填充数据
 					rule := p.icmpufw.GetRule(size, data)                  // 根据size获取规则
 					ipaddress := networkLayer.NetworkFlow().Src().String() // 获取源ip
