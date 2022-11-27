@@ -5,7 +5,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/share/icmpfw/icmpfw -c /usr/local/share/icmpfw/icmpfw.conf
+ExecStart=/usr/local/share/icmpfw/icmpfw -c /usr/local/share/icmpfw/config.yaml
 ExecStop=/bin/kill -HUP $MAINPID
 RestartSec=3s
 Restart=on-failure

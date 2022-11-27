@@ -17,7 +17,7 @@ var (
 
 func flagInit() {
 	args = &config.Args_struct{}
-	flag.StringVar(&args.ConfigFile, "c", "/usr/share/icmpfw/config_example.yaml", "config file")
+	flag.StringVar(&args.ConfigFile, "c", "/usr/local/share/icmpfw/config.yaml", "config file")
 	flag.BoolVar(&args.Help, "h", false, "help")
 	flag.StringVar(&args.HotUpdate, "hotUpdate", "false", "hotUpdate")
 	flag.BoolVar(&args.AutoReload, "autoReload", false, "autoReload")
